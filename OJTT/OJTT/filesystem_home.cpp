@@ -14,13 +14,15 @@ boost::filesystem::path ojtt::filesystem::home_directory_path() {
 	return boost::filesystem::path(home);
 }
 #else
-#include <unistd.h>
+/*#include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
 
-const char *homedir;
-
-if ((homedir = getenv("HOME")) == NULL) {
-	homedir = getpwuid(getuid())->pw_dir;
-}
+boost::filesystem::path ojtt::filesystem::home_directory_path() {
+	const char *homedir;
+	if ((homedir = getenv("HOME")) == NULL) {
+		homedir = getpwuid(getuid())->pw_dir;
+	}
+	return boost::filesystem::path(home);
+}*/
 #endif

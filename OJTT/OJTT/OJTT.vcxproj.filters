@@ -21,6 +21,9 @@
     <ClCompile Include="filesystem_home.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="config_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="filesystem_home.hpp">
