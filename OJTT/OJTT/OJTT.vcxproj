@@ -75,7 +75,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>C:\local\boost_1_68_0</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -122,12 +122,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="config_data.cpp" />
-    <ClCompile Include="filesystem_home.cpp" />
+    <ClCompile Include="ojtt.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="compiler.hpp" />
     <ClInclude Include="config_data.hpp" />
-    <ClInclude Include="filesystem_home.hpp" />
+    <ClInclude Include="launcher.hpp" />
+    <ClInclude Include="ojtt.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ojtt.cfg" />

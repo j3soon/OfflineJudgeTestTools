@@ -1,21 +1,32 @@
 #ifndef OJTT_CONFIG_DATA
 #define OJTT_CONFIG_DATA
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/regex.hpp>
 #include <string>
 #include <vector>
+#include <set>
+#include "ojtt.hpp"
 
 namespace ojtt {
 	//TODO: Encapsulate.
 	struct config_data {
-		std::vector<std::string> compile;
-		std::string file, file_ext;
+		std::string compile, execute;
+		std::string file;
 		std::vector<std::pair<std::string, std::string>> input_output;
 		std::string file_input, file_output;
 		std::string diff_file;
 		std::string input_randomizer;
 		std::string tmp_dir;
+		std::string tmp_dir_uuid;
 		std::string eol;
 		bool universal_eol;
 		std::string diff;
+		int time_out;
+		bool pause;
 		bool test_single;
 		std::string version;
 
@@ -31,12 +42,11 @@ namespace ojtt {
 		/// <summary>For debugging purpose.</summary>
 		/// <returns>Returns config data in std::string format.</returns>
 		std::string str() {
-			std::string s = "";
+			std::string s;
 			s += "compile: \n";
 			for (auto it : compile)
 				s += it + "\n";
 			s += "file: \n" + file + "\n";
-			s += "file_ext: \n" + file_ext + "\n";
 			s += "input_output: \n";
 			for (auto it : input_output)
 				s += it.first + ", " + it.second + "\n";
@@ -46,9 +56,11 @@ namespace ojtt {
 			s += "input_randomizer: \n" + input_randomizer + "\n";
 			s += "tmp_dir: \n" + tmp_dir + "\n";
 			s += "eol: \n" + eol + "\n";
-			s += "universal_eol: \n" + std::string(universal_eol ? "1" : "0") + "\n";
+			s += "universal_eol: \n" + std::to_string(universal_eol) + "\n";
 			s += "diff: \n" + diff + "\n";
-			s += "test_single: \n" + std::string(test_single ? "1" : "0") + "\n";
+			s += "time_out: \n" + std::to_string(time_out) + "\n";
+			s += "pause: \n" + std::to_string(pause) + "\n";
+			s += "test_single: \n" + std::to_string(test_single) + "\n";
 			return s;
 		}
 	};

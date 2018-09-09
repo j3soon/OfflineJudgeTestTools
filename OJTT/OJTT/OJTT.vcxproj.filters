@@ -18,18 +18,24 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="filesystem_home.cpp">
+    <ClCompile Include="config_data.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="config_data.cpp">
+    <ClCompile Include="ojtt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="filesystem_home.hpp">
+    <ClInclude Include="config_data.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="config_data.hpp">
+    <ClInclude Include="ojtt.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="compiler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="launcher.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

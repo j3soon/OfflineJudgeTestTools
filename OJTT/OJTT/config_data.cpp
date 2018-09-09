@@ -1,6 +1,3 @@
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include "filesystem_home.hpp"
 #include "config_data.hpp"
 #define DEBUG_MODE
 
@@ -11,16 +8,16 @@ namespace ojtt {
 
 	//TODO: Split function to pieces by notifier?
 	int config_data::setup_args(int ac, char *av[], std::ostream& cout) {
-		using namespace std;
 		namespace po = boost::program_options;
 		namespace fs = boost::filesystem;
 		namespace ofs = ojtt::filesystem;
+		namespace os = ojtt::string;
 
 		//TODO: Use 'this' instead of alias below.
 		config_data& data = *this;
 
 		// Descriptions.
-		po::options_description desc(string("Usage: \n") +
+		po::options_description desc(std::string("Usage: \n") +
 			"1. ojtt [options] [file] [input1] [output1] [input2] [output2]...\n" +
 			"2. ojtt [options] [file] -d [diff-file] -r [input-randomizer]");
 		po::options_description generic("Generic options");
@@ -28,20 +25,24 @@ namespace ojtt {
 		generic.add_options()
 			("help", "show help message")
 			("version", "show executable version")
-			("compile,c", po::value<vector<string>>()->composing(), "command to compile the source file")
-			("config", po::value<string>(), "path of config file")
-			("file,f", po::value<string>()->required(), "file to test")
-			("file-input,I", po::value<string>(), "input file path that will be read by code file.")
-			("file-output,O", po::value<string>(), "output file path that will be written by code file.")
-			("input-output,i", po::value<vector<string>>()->composing(), "key-value pairs of input test files and the matching expected output files.")
-			("diff-file,d", po::value<string>(), "file to diff")
-			("input-randomizer,r", po::value<string>(), "file to generate random inputs")
+			("clean", "clean temp files")
+			("compile,c", po::value<std::string>(), "command to compile the source file")
+			("execute,e", po::value<std::string>(), "command to execute the output file")
+			("config", po::value<std::string>(), "path of config file")
+			("file,f", po::value<std::string>()/*->required()*/, "file to test")
+			("file-input,I", po::value<std::string>(), "input file path that will be read by code file.")
+			("file-output,O", po::value<std::string>(), "output file path that will be written by code file.")
+			("input-output,i", po::value<std::vector<std::string>>()->composing(), "key-value pairs of input test files and the matching expected output files.")
+			("diff-file,d", po::value<std::string>(), "file to diff")
+			("input-randomizer,r", po::value<std::string>(), "file to generate random inputs")
 			;
 		config.add_options()
-			("tmp-dir", po::value<string>()->default_value((fs::temp_directory_path() / "ojtt").string()), "directory for saving temp files")
-			("eol", po::value<string>()->default_value("<EOL>"), "end-of-line symbol will show up")
+			("tmp-dir", po::value<std::string>()->default_value((fs::temp_directory_path() / "ojtt").string()), "directory for saving temp files")
+			("eol", po::value<std::string>()->default_value("<EOL>"), "end-of-line symbol will show up")
 			("universal-eol", po::value<bool>()->default_value(true), "ignore end-of-line differences")
-			("diff", po::value<string>(), "diff UI's command")
+			("diff", po::value<std::string>(), "diff UI's command")
+			("time-out,tle", po::value<int>()->default_value(15000), "executable max running time in milliseconds")
+			("pause,p", po::value<bool>()->default_value(false), "pause when exit")
 			;
 		desc.add(generic).add(config);
 		//The code above looks like Lisp code haha.
@@ -61,52 +62,83 @@ namespace ojtt {
 			cout << "ojtt version " << data.version << "\n";
 			return 1;
 		}
+		if (vm.count("clean")) {
+			int num;
+			try {
+				num = fs::remove_all(vm["tmp-dir"].as<std::string>());
+			} catch (fs::filesystem_error& e) {
+				cout << e.what();
+				return 1;
+			}
+			cout << num << " temp files deleted\n";
+			return 0;
+		}
 		if (vm.count("file")) {
-			string ss = vm["file"].as<string>();
-			data.file = fs::weakly_canonical(vm["file"].as<string>()).string();
-			data.file_ext = fs::extension(data.file);
-			if (data.file_ext.length() > 0)
-				data.file_ext = data.file_ext.substr(1);
+			try {
+				data.file = fs::canonical(vm["file"].as<std::string>()).string();
+			} catch (fs::filesystem_error& e) {
+				cout << e.what() << "\n";
+				return 1;
+			}
 		}
 		else {
 			cout << "File was not set.\n" << desc << "\n";
 			return 1;
 		}
 		if (vm.count("config")) {
-			po::store(parse_config_file(vm["config"].as<string>().c_str(), desc), vm);
+			po::store(parse_config_file(vm["config"].as<std::string>().c_str(), desc), vm);
 		}
 		else {
-			fs::path cfg = ofs::home_directory_path() / "ojtt" / ("ojtt-" + data.file_ext + ".cfg");
-			if (!fs::exists(cfg))
-				cfg = ofs::home_directory_path() / "ojtt" / "ojtt.cfg";
+			fs::path cfg = "ojtt.cfg";
+			if (fs::exists(cfg))
+				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
+			cfg = ofs::home_directory_path() / "ojtt" / ("ojtt-" + fs::extension(data.file) + ".cfg");
+			if (fs::exists(cfg))
+				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
+			cfg = ofs::home_directory_path() / "ojtt" / "ojtt.cfg";
 			if (fs::exists(cfg))
 				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
 		}
 		if (vm.count("compile")) {
-			data.compile = vm["compile"].as<vector<string>>();
+			data.compile = vm["compile"].as<std::string>();
 		}
 		else {
 			cout << "Compile command was not set.\n" << desc << "\n";
 			return 1;
 		}
+		if (vm.count("execute")) {
+			data.execute = vm["execute"].as<std::string>();
+		}
+		else {
+			cout << "Execute command was not set.\n" << desc << "\n";
+			return 1;
+		}
 		if (vm.count("tmp-dir")) {
-			data.tmp_dir = vm["tmp-dir"].as<string>();
+			data.tmp_dir = vm["tmp-dir"].as<std::string>();
+			boost::uuids::uuid uuid = boost::uuids::random_generator()();
+			data.tmp_dir_uuid = (fs::path(data.tmp_dir) / boost::uuids::to_string(uuid)).string();
 		}
 		if (vm.count("eol")) {
-			data.eol = vm["eol"].as<string>();
+			data.eol = vm["eol"].as<std::string>();
 		}
 		if (vm.count("universal-eol")) {
 			data.universal_eol = vm["universal-eol"].as<bool>();
 		}
 		if (vm.count("diff")) {
-			data.diff = vm["diff"].as<string>();
+			data.diff = vm["diff"].as<std::string>();
+		}
+		if (vm.count("time-out")) {
+			data.time_out = vm["time-out"].as<int>();
+		}
+		if (vm.count("pause")) {
+			data.pause = vm["pause"].as<bool>();
 		}
 		if (vm.count("diff-file")) {
 			data.test_single = false;
 			//For Usage 2.
-			data.diff_file = vm["diff-file"].as<string>();
+			data.diff_file = fs::weakly_canonical(vm["diff_file"].as<std::string>()).string();
 			if (vm.count("input-randomizer")) {
-				data.input_randomizer = vm["input-randomizer"].as<string>();
+				data.input_randomizer = vm["input-randomizer"].as<std::string>();
 			}
 			else {
 				cout << "Input randomizer was not set.\n" << desc << "\n";
@@ -116,20 +148,55 @@ namespace ojtt {
 		else if (vm.count("input-output")) {
 			data.test_single = true;
 			// For Usage 1.
-			vector<string> io = vm["input-output"].as<vector<string>>();
+			std::vector<std::string> io = vm["input-output"].as<std::vector<std::string>>();
 			if (io.size() % 2 != 0) {
 				cout << "Inputs outputs were not in pair.\n" << desc << "\n";
 				return 1;
 			}
-			string s;
+			std::string s1, s2;
 			int i = 0;
 			for (auto it : io) {
 				i++;
 				if (i == 2) {
+					// Got a pair.
+					std::set<std::string> input_set;
+					std::set<std::string> output_set;
 					i = 0;
-					data.input_output.push_back(make_pair(s, it));
+					s2 = it;
+					// Use RegEx to deal with '<any>'.
+					std::string regex_s1 = "^" + os::replaceAll(ojtt::regex::escape(s1), "<any>", "(.*)") + "$";
+					boost::regex reg1(regex_s1);
+					std::string regex_s2 = "^" + os::replaceAll(ojtt::regex::escape(s2), "<any>", "(.*)") + "$";
+					boost::regex reg2(regex_s2);
+					boost::smatch what;
+
+					try {
+						for (auto f : fs::directory_iterator(
+							fs::path(data.file).parent_path().string())) {
+							// The 'file_name' below must be used indirectly or it'll have strange results.
+							std::string file_name = f.path().filename().string();
+							if (boost::regex_match(file_name, what, reg1)) {
+								input_set.insert(what[1]);
+							}
+							if (boost::regex_match(file_name, what, reg2)) {
+								output_set.insert(what[1]);
+							}
+						}
+					} catch (fs::filesystem_error& e) {
+						cout << e.what() << "\n";
+						return 1;
+					}
+
+					// Push matching set to vector.
+
+					for (auto it : input_set) {
+						if (output_set.find(it) != output_set.end()) {
+							// Found pair.
+							data.input_output.push_back(std::make_pair(os::replaceAll(s1, "<any>", it), os::replaceAll(s2, "<any>", it)));
+						}
+					}
 				}
-				s = it;
+				s1 = it;
 			}
 		}
 		else {
@@ -137,10 +204,10 @@ namespace ojtt {
 			return 1;
 		}
 		if (vm.count("file-input")) {
-			data.file_input = vm["file-input"].as<string>();
+			data.file_input = vm["file-input"].as<std::string>();
 		}
 		if (vm.count("file-output")) {
-			data.file_output = vm["file-output"].as<string>();
+			data.file_output = vm["file-output"].as<std::string>();
 		}
 
 		po::notify(vm);
