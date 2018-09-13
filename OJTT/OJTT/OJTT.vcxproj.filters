@@ -15,27 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="config_data.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ojtt.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="config_data.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ojtt.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="compiler.hpp">
+    <ClInclude Include="launcher.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="launcher.hpp">
+    <ClInclude Include="testing.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -43,5 +32,16 @@
     <None Include="ojtt.cfg">
       <Filter>Resource Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="config_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ojtt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

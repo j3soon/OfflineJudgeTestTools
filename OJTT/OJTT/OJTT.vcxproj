@@ -121,18 +121,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="config_data.cpp" />
-    <ClCompile Include="ojtt.cpp" />
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="compiler.hpp" />
+    <ClInclude Include="testing.hpp" />
     <ClInclude Include="config_data.hpp" />
     <ClInclude Include="launcher.hpp" />
     <ClInclude Include="ojtt.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ojtt.cfg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="config_data.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ojtt.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

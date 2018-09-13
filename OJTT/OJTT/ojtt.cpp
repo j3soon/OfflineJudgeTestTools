@@ -1,3 +1,5 @@
+#include <boost/filesystem/path.hpp>
+#include <boost/regex.hpp>
 #include "ojtt.hpp"
 
 #ifdef _WIN32
@@ -7,8 +9,7 @@ boost::filesystem::path ojtt::filesystem::home_directory_path() {
 	if ((homedir = getenv("HOME")) == nullptr) {
 		home = getenv("HOMEDRIVE");
 		home += getenv("HOMEPATH");
-	}
-	else {
+	} else {
 		home = homedir;
 	}
 	return boost::filesystem::path(home);

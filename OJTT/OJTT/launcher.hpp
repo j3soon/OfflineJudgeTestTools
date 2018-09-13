@@ -1,5 +1,5 @@
-#ifndef OJTT_LAUNCHER
-#define OJTT_LAUNCHER
+#ifndef OJTT_LAUNCHER_H
+#define OJTT_LAUNCHER_H
 #include <boost/process.hpp>
 #include <boost/asio.hpp>
 #include <string>
@@ -18,6 +18,7 @@ namespace ojtt {
 		Result result = RESULT_UNSET;
 		std::string ex_what;
 		int exit_code;
+		long long exec_time;
 		std::string output;
 
 		//TODO: Use more straightforward approach.
@@ -27,7 +28,7 @@ namespace ojtt {
 		}
 	};
 	struct launcher {
-		static launcher_result launch(const std::string& exec, int time_out = -1, std::string input = "", int buff_size = 4096) {
+		static inline launcher_result launch(const std::string& exec, int time_out = -1, std::string input = "", int buff_size = 4096) {
 			launcher_result ret;
 			namespace bp = boost::process;
 			boost::asio::io_service ios;
@@ -45,12 +46,17 @@ namespace ojtt {
 				}*/
 				bp::child c(exec, bp::std_in < boost::asio::buffer(inputbuff), (bp::std_out & bp::std_err) > boost::asio::buffer(buf), ios);
 				ios.run();
+				std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
 				if (time_out != -1 && !c.wait_for(std::chrono::milliseconds(time_out))) {
 					c.terminate();
 					ret.setResult(launcher_result::RESULT_TIMEOUT);
 				}
 				//Wait for the exit code.
 				c.wait();
+				std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
+				auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
+				auto ms = milliseconds.count();
+				ret.exec_time = ms;
 				ret.exit_code = c.exit_code();
 			} catch (std::system_error& e) {
 				ret.setResult(launcher_result::RESULT_EXCEPTION);

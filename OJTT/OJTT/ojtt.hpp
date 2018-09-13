@@ -1,7 +1,5 @@
-#ifndef OJTT
-#define OJTT
-#include <boost/filesystem/path.hpp>
-#include <boost/regex.hpp>
+#ifndef OJTT_H
+#define OJTT_H
 
 namespace ojtt {
 	namespace filesystem {

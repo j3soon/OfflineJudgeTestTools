@@ -1,15 +1,5 @@
-#ifndef OJTT_CONFIG_DATA
-#define OJTT_CONFIG_DATA
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/regex.hpp>
-#include <string>
-#include <vector>
-#include <set>
-#include "ojtt.hpp"
+#ifndef OJTT_CONFIG_DATA_H
+#define OJTT_CONFIG_DATA_H
 
 namespace ojtt {
 	//TODO: Encapsulate.
@@ -24,13 +14,15 @@ namespace ojtt {
 		std::string tmp_dir_uuid;
 		std::string eol;
 		bool universal_eol;
+		std::string randomizer_compile;
 		std::string diff;
 		int time_out;
+		int diff_level;
 		bool pause;
 		bool test_single;
 		std::string version;
 
-		explicit config_data(const std::string& version);
+		explicit config_data(std::string version);
 
 		/// <summary>Set up help description.</summary>
 		/// <param name="ac">Arguments count.</param>
