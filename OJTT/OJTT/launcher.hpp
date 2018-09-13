@@ -45,19 +45,28 @@ namespace ojtt {
 					ret.setResult(launcher_result::RESULT_TIMEOUT);
 				}*/
 				bp::child c(exec, bp::std_in < boost::asio::buffer(inputbuff), (bp::std_out & bp::std_err) > boost::asio::buffer(buf), ios);
-				ios.run();
 				std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
-				if (time_out != -1 && !c.wait_for(std::chrono::milliseconds(time_out))) {
+				if (time_out == -1) {
+					ios.run();
+				} else {
+					int a = ios.run_for(std::chrono::milliseconds(time_out));
+					//TODO: Change to execute terminate in certain condition.
 					c.terminate();
-					ret.setResult(launcher_result::RESULT_TIMEOUT);
 				}
-				//Wait for the exit code.
-				c.wait();
 				std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
 				auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
 				auto ms = milliseconds.count();
 				ret.exec_time = ms;
+				/*if (time_out != -1 && !c.wait_for(std::chrono::milliseconds(0))) {
+					c.terminate();
+					ret.setResult(launcher_result::RESULT_TIMEOUT);
+				}*/
+				//Wait for the exit code.
+				c.wait();
 				ret.exit_code = c.exit_code();
+				if (ret.exit_code) {
+					ret.setResult(launcher_result::RESULT_TIMEOUT);
+				}
 			} catch (std::system_error& e) {
 				ret.setResult(launcher_result::RESULT_EXCEPTION);
 				ret.ex_what = e.what();

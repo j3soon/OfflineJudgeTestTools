@@ -22,6 +22,7 @@ int test_single(int& ac, const ojtt::config_data& data) {
 	namespace ot = ojtt::testing;
 	namespace fs = boost::filesystem;
 	int ret;
+	size_t i = 0;
 	long long exec_time;
 	boost::uuids::random_generator generator;
 	std::string expected_file = (fs::path(data.tmp_dir_uuid) / ("expected_file_" + boost::uuids::to_string(generator()))).string();
@@ -30,11 +31,11 @@ int test_single(int& ac, const ojtt::config_data& data) {
 	fs::ofstream actual_writer(actual_file);
 
 	// Test all test cases.
-	for (size_t i = 0; i < data.input_output.size(); i++) {
-		const auto& io = data.input_output[i];
+	for (auto io : data.input_output) {
+		i++;
 		bool error = false;
-		std::string progress = (i + 1) + "/" + data.input_output.size();
-		std::cout << "Testing: " << ": " << boost::filesystem::path(data.file).filename().string() << "\n";
+		std::string progress = i + "/" + data.input_output.size();
+		std::cout << "Testing: " << io.first << "\n";
 		std::string input, output, actual_output;
 		// Read input, output from file.
 		if (ret = ot::read(io.first, input, data.file, data.tmp_dir, std::cout)) return 1;
@@ -50,9 +51,9 @@ int test_single(int& ac, const ojtt::config_data& data) {
 				std::cout << "Input:\n" << input << "\n";
 			} else if (data.diff_level == 2) {
 				// Save to diff files.
-				expected_writer << "Testing: " << ": " << boost::filesystem::path(data.file).filename().string() << "\n";
+				expected_writer << "Testing: " << io.first << "\n";
 				expected_writer << "Input:\n" << input << "\n";
-				actual_writer << "Testing: " << ": " << boost::filesystem::path(data.file).filename().string() << "\n";
+				actual_writer << "Testing: " << io.first << "\n";
 				actual_writer << "Input:\n" << input << "\n";
 			}
 			input = "";

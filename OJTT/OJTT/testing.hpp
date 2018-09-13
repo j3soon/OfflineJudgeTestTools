@@ -63,7 +63,7 @@ namespace ojtt {
 			std::string cmd = _preprocess_path(file, command, tempdir);
 			//TODO: Change below dirty code (1 line) to something readable.
 			// Code below pretend 'file' is 'expected_file', 'tempdir' is 'actual_file'.
-			cmd = _preprocess_diff_path(file, tempdir, command);
+			cmd = _preprocess_diff_path(file, tempdir, cmd);
 			// Execute executable.
 			launcher_result lresult;
 			lresult = launcher::launch(cmd, time_out, input);
@@ -80,7 +80,8 @@ namespace ojtt {
 			if (lresult.result == launcher_result::RESULT_ERROR) {
 				cout << "RE (Runtime Error)\n";
 				cout << "Output: \n" << lresult.output << "\n";
-				cout << "Exit with code: " << lresult.exit_code << "\n";
+				cout << "Exit with code: " << lresult.exit_code;
+				std::cout << " (" << exec_time << "ms)\n";
 				if (pActual_writer == nullptr) return 1;
 				(*pActual_writer) << "RE (Runtime Error)\n";
 				(*pActual_writer) << "Output: \n" << lresult.output << "\n";
@@ -90,7 +91,8 @@ namespace ojtt {
 			if (lresult.result == launcher_result::RESULT_TIMEOUT) {
 				cout << "TLE (Time Limit Exceeded)\n";
 				cout << "Output: \n" << lresult.output << "\n";
-				cout << "Exit with code: " << lresult.exit_code << "\n";
+				cout << "Exit with code: " << lresult.exit_code;
+				std::cout << " (" << exec_time << "ms)\n";
 				if (pActual_writer == nullptr) return 1;
 				(*pActual_writer) << "TLE (Time Limit Exceeded)\n";
 				(*pActual_writer) << "Output: \n" << lresult.output << "\n";

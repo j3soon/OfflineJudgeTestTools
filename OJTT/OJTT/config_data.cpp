@@ -10,7 +10,7 @@
 #include <set>
 #include "ojtt.hpp"
 #include "config_data.hpp"
-#define DEBUG_MODE
+//#define DEBUG_MODE
 
 namespace ojtt {
 	config_data::config_data(std::string version) : version(std::move(version)) {}
@@ -213,7 +213,7 @@ namespace ojtt {
 						if (output_set.find(it) != output_set.end()) {
 							//TODO: Remove duplicates.
 							// Found pair.
-							data.input_output.push_back(std::make_pair(os::replaceAll(s1, "<any>", it), os::replaceAll(s2, "<any>", it)));
+							data.input_output.insert(std::make_pair(os::replaceAll(s1, "<any>", it), os::replaceAll(s2, "<any>", it)));
 						}
 					}
 				}

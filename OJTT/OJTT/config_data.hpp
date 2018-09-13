@@ -6,7 +6,7 @@ namespace ojtt {
 	struct config_data {
 		std::string compile, execute;
 		std::string file;
-		std::vector<std::pair<std::string, std::string>> input_output;
+		std::set<std::pair<std::string, std::string>> input_output;
 		std::string file_input, file_output;
 		std::string diff_file;
 		std::string input_randomizer;
