@@ -77,6 +77,13 @@ namespace ojtt {
 			data.tmp_dir = vm["tmp-dir"].as<std::string>();
 			boost::uuids::uuid uuid = boost::uuids::random_generator()();
 			data.tmp_dir_uuid = (fs::path(data.tmp_dir) / boost::uuids::to_string(uuid)).string();
+			try {
+				fs::create_directories(data.tmp_dir_uuid);
+			} catch(fs::filesystem_error& e) {
+				cout << "Error in function 'setup_args' at arg 'tmp-dir' when trying to create: " << data.tmp_dir_uuid << "\n";
+				cout << e.what();
+				return 1;
+			}
 		}
 		if (vm.count("clean")) {
 			int num;
@@ -98,23 +105,24 @@ namespace ojtt {
 				cout << e.what() << "\n";
 				return 1;
 			}
-		}/* else {
-			cout << "File was not set.\n" << desc << "\n";
-			return 1;
-		}*/
+		} else {
+			cout << "Warning: File was not set.\n" << desc << "\n";
+		}
 		if (vm.count("config")) {
 			po::store(parse_config_file(vm["config"].as<std::string>().c_str(), desc), vm);
-		} else {
-			fs::path cfg = "ojtt.cfg";
-			if (fs::exists(cfg))
-				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
-			cfg = ofs::home_directory_path() / "ojtt" / ("ojtt-" + fs::extension(data.file) + ".cfg");
-			if (fs::exists(cfg))
-				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
-			cfg = ofs::home_directory_path() / "ojtt" / "ojtt.cfg";
-			if (fs::exists(cfg))
-				po::store(parse_config_file(cfg.string().c_str(), desc), vm);
 		}
+		fs::path cfg = "ojtt.cfg";
+		if (fs::exists(cfg))
+			po::store(parse_config_file(cfg.string().c_str(), desc), vm);
+		std::string file_ext = fs::extension(data.file);
+		if (file_ext.length() > 0)
+			file_ext = file_ext.substr(1);
+		cfg = ofs::home_directory_path() / "ojtt" / ("ojtt-" + file_ext + ".cfg");
+		if (fs::exists(cfg))
+			po::store(parse_config_file(cfg.string().c_str(), desc), vm);
+		cfg = ofs::home_directory_path() / "ojtt" / "ojtt.cfg";
+		if (fs::exists(cfg))
+			po::store(parse_config_file(cfg.string().c_str(), desc), vm);
 		if (vm.count("compile")) {
 			data.compile = vm["compile"].as<std::string>();
 		} else {

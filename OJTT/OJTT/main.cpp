@@ -61,11 +61,11 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		// Get actual output.
 		if (data.diff_level == 2) {
 			expected_writer << "Output:\n" << output << "\n";
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir, data.time_out, exec_time, std::cout, &actual_writer)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.time_out, exec_time, std::cout, &actual_writer)) {
 				continue;
 			}
 		} else {
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir, data.time_out, exec_time, std::cout)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.time_out, exec_time, std::cout)) {
 				continue;
 			}
 		}
