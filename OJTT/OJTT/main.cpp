@@ -65,11 +65,9 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		}
 		// Get actual output.
 		if (data.diff_level == 2) {
-			expected_writer << "Output:\n" << output << "\n";
 			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout, &actual_writer)) {
 				continue;
 			}
-			actual_writer << "Output:\n" << actual_output << "\n";
 		} else {
 			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout)) {
 				continue;
@@ -79,7 +77,13 @@ int test_single(int& ac, const ojtt::config_data& data) {
 			// Output should be read from destination.
 			if (ret = ot::read(data.file_output, actual_output, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
 		}
+		//TODO: Should universal_eol be after write to file?
+		// Line below can prevent doubled new-line problem.
 		actual_output = ot::universal_eol(actual_output, data.universal_eol);
+		if (data.diff_level == 2) {
+			expected_writer << "Output:\n" << output << "\n";
+			actual_writer << "Output:\n" << actual_output << "\n";
+		}
 		// Compare 'output' and 'actual_output'.
 		if (output == actual_output) {
 			ac++;
