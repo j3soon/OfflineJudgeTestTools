@@ -1,6 +1,9 @@
 # Offline Judge Test Tools (OJTT)
 Simple command line tool for testing code. Can be used as an offline judge (not online judge).
 
+## Screenshots
+![](/doc/imgs/screenshot.png)
+
 ## Usages
 1. Test a single code file.
 
