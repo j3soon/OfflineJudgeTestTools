@@ -127,6 +127,8 @@
     <ClInclude Include="ojtt.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ojtt-c.cfg" />
+    <None Include="ojtt-cpp.cfg" />
     <None Include="ojtt.cfg" />
   </ItemGroup>
   <ItemGroup>

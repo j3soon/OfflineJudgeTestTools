@@ -8,6 +8,7 @@ namespace ojtt {
 		std::string file;
 		std::set<std::pair<std::string, std::string>> input_output;
 		std::string file_input, file_output;
+		std::string output_file;
 		std::string diff_file;
 		std::string input_randomizer;
 		std::string tmp_dir;
@@ -18,7 +19,7 @@ namespace ojtt {
 		std::string diff;
 		int time_out;
 		int diff_level;
-		bool pause;
+		bool pause = false;
 		bool test_single;
 		std::string version;
 

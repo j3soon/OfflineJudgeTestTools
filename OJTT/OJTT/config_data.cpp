@@ -10,6 +10,8 @@
 #include <set>
 #include "ojtt.hpp"
 #include "config_data.hpp"
+#include "testing.hpp"
+
 //#define DEBUG_MODE
 
 namespace ojtt {
@@ -35,20 +37,21 @@ namespace ojtt {
 			("help,?", "show help message")
 			("version,v", "show executable version")
 			("clean,cln", "clean temp files")
-			("compile,c", po::value<std::string>(), "command to compile the source file")
-			("execute,e", po::value<std::string>(), "command to execute the output file")
 			("config", po::value<std::string>(), "path of config file")
 			("file,f", po::value<std::string>()/*->required()*/, "file to test")
-			("file-input,i", po::value<std::string>(), "input file path that will be read by code file.")
-			("file-output,o", po::value<std::string>(), "output file path that will be written by code file.")
-			("input-output,t", po::value<std::vector<std::string>>()->composing(), "key-value pairs of input test files and the matching expected output files.")
-			("diff-file,d", po::value<std::string>(), "file to diff")
+			("file-input,i", po::value<std::string>(), "input file path that will be read by code file")
+			("file-output,o", po::value<std::string>(), "output file path that will be written by code file")
+			("input-output,t", po::value<std::vector<std::string>>()->composing(), "key-value pairs of input test files and the matching expected output files")
+			("diff-file,d", po::value<std::string>(), "the 2nd file to test (diff)")
 			("input-randomizer,r", po::value<std::string>(), "file to generate random inputs")
 			;
 		config.add_options()
 			("tmp-dir", po::value<std::string>()->default_value((fs::temp_directory_path() / "ojtt").string()), "directory for saving temp files")
 			("eol", po::value<std::string>()->default_value("<EOL>"), "end-of-line symbol will show up")
 			("universal-eol,ueol", po::value<bool>()->default_value(true), "ignore end-of-line differences")
+			("compile,C", po::value<std::string>(), "command to compile the source file")
+			("execute,E", po::value<std::string>(), "command to execute the output file")
+			("output-file,O", po::value<std::string>(), "output file")
 			("randomizer-compile,C", po::value<std::string>(), "command to compile the randomizer file (if not set uses 'compile' instead)")
 			("diff,D", po::value<std::string>(), "diff UI's command")
 			("time-out,tle,T", po::value<int>()->default_value(15000), "executable max running time in milliseconds")
@@ -79,7 +82,7 @@ namespace ojtt {
 			data.tmp_dir_uuid = (fs::path(data.tmp_dir) / boost::uuids::to_string(uuid)).string();
 			try {
 				fs::create_directories(data.tmp_dir_uuid);
-			} catch(fs::filesystem_error& e) {
+			} catch (fs::filesystem_error& e) {
 				cout << "Error in function 'setup_args' at arg 'tmp-dir' when trying to create: " << data.tmp_dir_uuid << "\n";
 				cout << e.what();
 				return 1;
@@ -135,6 +138,12 @@ namespace ojtt {
 			cout << "Execute command was not set.\n" << desc << "\n";
 			return 1;
 		}
+		if (vm.count("output-file")) {
+			data.output_file = vm["output-file"].as<std::string>();
+		} else {
+			cout << "Output file was not set.\n" << desc << "\n";
+			return 1;
+		}
 		if (vm.count("eol")) {
 			data.eol = vm["eol"].as<std::string>();
 		}
@@ -165,6 +174,7 @@ namespace ojtt {
 		if (vm.count("diff-file")) {
 			data.test_single = false;
 			//For Usage 2.
+			//TODO: no weakly canonoical.
 			data.diff_file = fs::weakly_canonical(vm["diff_file"].as<std::string>()).string();
 			if (vm.count("input-randomizer")) {
 				data.input_randomizer = vm["input-randomizer"].as<std::string>();
@@ -233,15 +243,27 @@ namespace ojtt {
 		}
 		if (vm.count("file-input")) {
 			data.file_input = vm["file-input"].as<std::string>();
+			fs::path path(data.file_input);
+			if (path.is_relative()) {
+				std::string start_dir = testing::_preprocess_path(data.file, data.output_file, data.tmp_dir_uuid, data.output_file);
+				path = fs::path(start_dir).parent_path() / data.file_input;
+				file_input = path.string();
+			}
 		}
 		if (vm.count("file-output")) {
 			data.file_output = vm["file-output"].as<std::string>();
+			fs::path path(data.file_output);
+			if (path.is_relative()) {
+				std::string start_dir = testing::_preprocess_path(data.file, data.output_file, data.tmp_dir_uuid, data.output_file);
+				path = fs::path(start_dir).parent_path() / data.file_output;
+				file_output = path.string();
 		}
+	}
 
 		po::notify(vm);
 #ifdef DEBUG_MODE
 		cout << data.str();
 #endif
 		return 0;
-	}
+}
 }

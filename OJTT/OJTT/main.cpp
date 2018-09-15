@@ -27,8 +27,14 @@ int test_single(int& ac, const ojtt::config_data& data) {
 	boost::uuids::random_generator generator;
 	std::string expected_file = (fs::path(data.tmp_dir_uuid) / ("expected_file_" + boost::uuids::to_string(generator()))).string();
 	std::string actual_file = (fs::path(data.tmp_dir_uuid) / ("actual_file_" + boost::uuids::to_string(generator()))).string();
-	fs::ofstream expected_writer(expected_file);
-	fs::ofstream actual_writer(actual_file);
+	fs::ofstream expected_writer;
+	fs::ofstream actual_writer;
+	if (data.diff_level == 2) {
+		expected_writer.open(expected_file);
+		actual_writer.open(actual_file);
+		expected_writer << "Expected Output File.\n";
+		actual_writer << "Actual Output File.\n";
+	}
 
 	// Test all test cases.
 	for (auto io : data.input_output) {
@@ -36,42 +42,41 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		bool error = false;
 		std::string progress = i + "/" + data.input_output.size();
 		std::cout << "Testing: " << io.first << "\n";
-		std::string input, output, actual_output;
+		std::string input, output, original_input, actual_output;
 		// Read input, output from file.
-		if (ret = ot::read(io.first, input, data.file, data.tmp_dir, std::cout)) return 1;
+		if (ret = ot::read(io.first, input, data.file, data.tmp_dir, data.output_file, std::cout)) return 1;
 		input = ot::universal_eol(input, data.universal_eol);
-		if (ret = ot::read(io.second, output, data.file, data.tmp_dir, std::cout)) return 1;
+		if (ret = ot::read(io.second, output, data.file, data.tmp_dir, data.output_file, std::cout)) return 1;
 		output = ot::universal_eol(output, data.universal_eol);
+		if (data.diff_level == 2) {
+			// Save to diff files.
+			expected_writer << "Testing: " << io.first << "\n";
+			expected_writer << "Input:\n" << input << "\n";
+			actual_writer << "Testing: " << io.first << "\n";
+			actual_writer << "Input:\n" << input << "\n";
+		}
+		original_input = input;
 		// Deal with input.
 		if (!data.file_input.empty()) {
 			// Input should be saved to destination.
-			if (ret = ot::overwrite(data.file_input, input, data.file, data.tmp_dir_uuid, std::cout)) return 1;
-			if (data.diff_level == 1) {
-				// Show on console.
-				std::cout << "Input:\n" << input << "\n";
-			} else if (data.diff_level == 2) {
-				// Save to diff files.
-				expected_writer << "Testing: " << io.first << "\n";
-				expected_writer << "Input:\n" << input << "\n";
-				actual_writer << "Testing: " << io.first << "\n";
-				actual_writer << "Input:\n" << input << "\n";
-			}
+			if (ret = ot::overwrite(data.file_input, input, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
 			input = "";
 		}
 		// Get actual output.
 		if (data.diff_level == 2) {
 			expected_writer << "Output:\n" << output << "\n";
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.time_out, exec_time, std::cout, &actual_writer)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout, &actual_writer)) {
 				continue;
 			}
+			actual_writer << "Output:\n" << actual_output << "\n";
 		} else {
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.time_out, exec_time, std::cout)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout)) {
 				continue;
 			}
 		}
 		if (!data.file_output.empty()) {
 			// Output should be read from destination.
-			if (ret = ot::read(io.first, actual_output, data.file, data.tmp_dir, std::cout)) return 1;
+			if (ret = ot::read(data.file_output, actual_output, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
 		}
 		actual_output = ot::universal_eol(actual_output, data.universal_eol);
 		// Compare 'output' and 'actual_output'.
@@ -85,21 +90,20 @@ int test_single(int& ac, const ojtt::config_data& data) {
 				// Don't show.
 			} else if (data.diff_level == 1) {
 				// Show on console.
+				std::cout << "Input:\n" << input << "\n";
 				std::cout << "Expected output:\n" << (data.eol.empty() ? output : ojtt::string::replaceAll(output, "\n", data.eol + "\n")) << "\n";
 				std::cout << "Actual output:\n" << (data.eol.empty() ? actual_output : ojtt::string::replaceAll(actual_output, "\n", data.eol + "\n")) << "\n";
 			}
 			std::cout << "Result: Failed";
 		}
 		std::cout << " (" << exec_time << "ms)\n";
-		if (data.diff_level == 2) {
-			// Save to diff files.
-			actual_writer << "Output:\n" << actual_output << "\n";
-		}
 	}
+	expected_writer.close();
+	actual_writer.close();
 	if (data.diff_level == 2) {
 		// Show in diff GUI.
 		std::string _;
-		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, data.time_out, exec_time, std::cout)) return 1;
+		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, "", data.time_out, exec_time, std::cout)) return 1;
 	}
 	return 0;
 }
@@ -116,7 +120,8 @@ int main(int argc, char *argv[]) {
 		// Read args.
 		if (ret = data.setup_args(argc, argv, std::cout)) return exit(ret, data.pause);
 		// Compile.
-		if (ret = ot::compile(data.compile, data.file, data.tmp_dir_uuid, std::cout)) return exit(ret, data.pause);
+		if (ret = ot::compile(data.compile, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return exit(ret, data.pause);
+		std::cout << "\n";
 		if (data.test_single) {
 			int ac = 0;
 			if (test_single(ac, data))
@@ -125,10 +130,10 @@ int main(int argc, char *argv[]) {
 			if (ac == data.input_output.size())
 				std::cout << ac << "/" << data.input_output.size() << " AC (All Accepted)\n";
 			else
-				std::cout << ac << "/" << data.input_output.size() << " WA (Wrong Answer)\n";
+				std::cout << ac << "/" << data.input_output.size() << " NA (Not Accepted)\n";
 		} else {
 			// Compile diff file.
-			if (ret = ot::compile(data.compile, data.diff_file, data.tmp_dir_uuid, std::cout)) return exit(ret, data.pause);
+			if (ret = ot::compile(data.compile, data.diff_file, data.tmp_dir_uuid, data.output_file, std::cout)) return exit(ret, data.pause);
 			//TODO: use randomizer blah blah blah.
 			throw;
 		}

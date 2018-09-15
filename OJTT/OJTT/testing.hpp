@@ -10,7 +10,7 @@ namespace ojtt {
 	namespace testing {
 		//TODO: Optimize by storing replaced string for further use.
 		// Preprocess command.
-		inline std::string _preprocess_path(const std::string& file, const std::string& command, const std::string& tempdir) {
+		inline std::string _preprocess_path(const std::string& file, const std::string& command, const std::string& tempdir, const std::string& output_file) {
 			namespace fs = boost::filesystem;
 			std::string cmd = command;
 			std::string file_ext = fs::extension(file);
@@ -19,11 +19,12 @@ namespace ojtt {
 			std::string file_name = fs::path(file).stem().string();
 			std::string	file_dir = fs::path(file).parent_path().string();
 			//Replace <filepath> == <filedirpath><filename><fileext>
+			cmd = string::replaceAll(cmd, "<outputfilepath>", output_file);
 			cmd = string::replaceAll(cmd, "<filepath>", "\"" + file + "\"");
 			cmd = string::replaceAll(cmd, "<filedirpath>", file_dir + "/");
 			cmd = string::replaceAll(cmd, "<filename>", file_name);
 			cmd = string::replaceAll(cmd, "<fileext>", file_ext);
-			cmd = string::replaceAll(cmd, "<tmpdir>", tempdir);
+			cmd = string::replaceAll(cmd, "<tmpdir>", tempdir + "/");
 			return cmd;
 		}
 		inline std::string _preprocess_diff_path(const std::string& expected_file, const std::string& actual_file, const std::string& command) {
@@ -39,10 +40,12 @@ namespace ojtt {
 			str = string::replaceAll(str, "\r", "\n");
 			return str;
 		}
-		inline int compile(const std::string& command, const std::string& file, const std::string& tempdir, std::ostream& cout) {
+		inline int compile(const std::string& command, const std::string& file, const std::string& tempdir, std::string output_file, std::ostream& cout) {
 			namespace bp = boost::process;
 			// Preprocess command.
-			std::string cmd = _preprocess_path(file, command, tempdir);
+			std::string cmd = _preprocess_path(file, command, tempdir, output_file);
+			//std::string start_dir = _preprocess_path(file, output_file, tempdir, output_file);
+			//start_dir = boost::filesystem::path(start_dir).parent_path().string();
 			// Execute compile command.
 			cout << "Executing command: " << cmd << "\n";
 			launcher_result lresult;
@@ -57,22 +60,29 @@ namespace ojtt {
 				return 1;
 			return 0;
 		}
-		inline int execute(const std::string& command, const std::string& input, std::string& output, const std::string& file, const std::string& tempdir, int time_out, long long& exec_time, std::ostream& cout, boost::filesystem::ofstream* pActual_writer = nullptr) {
+		inline int execute(const std::string& command, const std::string& input, std::string& output, const std::string& file, const std::string& tempdir, std::string output_file, int time_out, long long& exec_time, std::ostream& cout, boost::filesystem::ofstream* pActual_writer = nullptr) {
 			namespace bp = boost::process;
 			// Preprocess command.
-			std::string cmd = _preprocess_path(file, command, tempdir);
+			std::string cmd = _preprocess_path(file, command, tempdir, output_file);
+			std::string start_dir;
+			if (!output_file.empty()) {
+				start_dir = _preprocess_path(file, output_file, tempdir, output_file);
+				start_dir = boost::filesystem::path(start_dir).parent_path().string();
+			}
 			//TODO: Change below dirty code (1 line) to something readable.
 			// Code below pretend 'file' is 'expected_file', 'tempdir' is 'actual_file'.
 			cmd = _preprocess_diff_path(file, tempdir, cmd);
 			// Execute executable.
 			launcher_result lresult;
-			lresult = launcher::launch(cmd, time_out, input);
+			lresult = launcher::launch(cmd, start_dir, time_out, input);
 			exec_time = lresult.exec_time;
 			if (lresult.result == launcher_result::RESULT_EXCEPTION) {
 				cout << "Error in function 'execute' when executing command: " << cmd << "\n";
+				cout << "with starting directory: " << start_dir << "\n";
 				cout << lresult.ex_what << "\n";
 				if (pActual_writer == nullptr) return 1;
 				(*pActual_writer) << "Error in function 'execute' when executing command: " << cmd << "\n";
+				(*pActual_writer) << "with starting directory: " << start_dir << "\n";
 				(*pActual_writer) << lresult.ex_what << "\n";
 				return 1;
 			}
@@ -81,7 +91,7 @@ namespace ojtt {
 				cout << "RE (Runtime Error)\n";
 				cout << "Output: \n" << lresult.output << "\n";
 				cout << "Exit with code: " << lresult.exit_code;
-				std::cout << " (" << exec_time << "ms)\n";
+				cout << " (" << exec_time << "ms)\n";
 				if (pActual_writer == nullptr) return 1;
 				(*pActual_writer) << "RE (Runtime Error)\n";
 				(*pActual_writer) << "Output: \n" << lresult.output << "\n";
@@ -92,7 +102,7 @@ namespace ojtt {
 				cout << "TLE (Time Limit Exceeded)\n";
 				cout << "Output: \n" << lresult.output << "\n";
 				cout << "Exit with code: " << lresult.exit_code;
-				std::cout << " (" << exec_time << "ms)\n";
+				cout << " (" << exec_time << "ms)\n";
 				if (pActual_writer == nullptr) return 1;
 				(*pActual_writer) << "TLE (Time Limit Exceeded)\n";
 				(*pActual_writer) << "Output: \n" << lresult.output << "\n";
@@ -101,10 +111,10 @@ namespace ojtt {
 			}
 			return 0;
 		}
-		inline int read(const std::string& path, std::string& content, const std::string& file, const std::string& tempdir, std::ostream& cout) {
+		inline int read(const std::string& path, std::string& content, const std::string& file, const std::string& tempdir, const std::string& output_file, std::ostream& cout) {
 			namespace fs = boost::filesystem;
 			// Preprocess path.
-			std::string p = _preprocess_path(file, path, tempdir);
+			std::string p = _preprocess_path(file, path, tempdir, output_file);
 			// Read from file.
 			try {
 				// Read entire file.
@@ -123,10 +133,10 @@ namespace ojtt {
 			}
 			return 0;
 		}
-		inline int overwrite(const std::string& path, const std::string& input, const std::string& file, const std::string& tempdir, std::ostream& cout) {
+		inline int overwrite(const std::string& path, const std::string& input, const std::string& file, const std::string& tempdir, const std::string& output_file, std::ostream& cout) {
 			namespace fs = boost::filesystem;
 			// Preprocess path.
-			std::string p = _preprocess_path(file, path, tempdir);
+			std::string p = _preprocess_path(file, path, tempdir, output_file);
 			// Write to file.
 			try {
 				fs::ofstream writer(p);
