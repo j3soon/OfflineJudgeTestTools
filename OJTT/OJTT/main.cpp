@@ -8,7 +8,7 @@
 #include "ojtt.hpp"
 #include "testing.hpp"
 
-static const std::string version = "alpha";
+static const std::string version = "v0.1";
 
 int exit(int exit_code, bool pause) {
 	if (pause) {

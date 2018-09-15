@@ -32,6 +32,8 @@
     <None Include="ojtt.cfg">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="ojtt-c.cfg" />
+    <None Include="ojtt-cpp.cfg" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="config_data.cpp">
