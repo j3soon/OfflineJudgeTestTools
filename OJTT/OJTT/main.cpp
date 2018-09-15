@@ -18,6 +18,8 @@ int exit(int exit_code, bool pause) {
 	return exit_code;
 }
 
+//TODO: Reuse the same code of the 2 functions below.
+
 int test_single(int& ac, const ojtt::config_data& data) {
 	namespace ot = ojtt::testing;
 	namespace fs = boost::filesystem;
@@ -39,7 +41,6 @@ int test_single(int& ac, const ojtt::config_data& data) {
 	// Test all test cases.
 	for (auto io : data.input_output) {
 		i++;
-		bool error = false;
 		std::string progress = i + "/" + data.input_output.size();
 		std::cout << "Testing: " << io.first << "\n";
 		std::string input, output, original_input, actual_output;
@@ -90,7 +91,7 @@ int test_single(int& ac, const ojtt::config_data& data) {
 				// Don't show.
 			} else if (data.diff_level == 1) {
 				// Show on console.
-				std::cout << "Input:\n" << input << "\n";
+				std::cout << "Input:\n" << original_input << "\n";
 				std::cout << "Expected output:\n" << (data.eol.empty() ? output : ojtt::string::replaceAll(output, "\n", data.eol + "\n")) << "\n";
 				std::cout << "Actual output:\n" << (data.eol.empty() ? actual_output : ojtt::string::replaceAll(actual_output, "\n", data.eol + "\n")) << "\n";
 			}
@@ -98,12 +99,95 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		}
 		std::cout << " (" << exec_time << "ms)\n";
 	}
-	expected_writer.close();
-	actual_writer.close();
 	if (data.diff_level == 2) {
+		expected_writer.close();
+		actual_writer.close();
 		// Show in diff GUI.
 		std::string _;
 		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, "", data.time_out, exec_time, std::cout)) return 1;
+	}
+	return 0;
+}
+
+int test_double(const ojtt::config_data& data) {
+	namespace ot = ojtt::testing;
+	namespace fs = boost::filesystem;
+	int ret;
+	long long _;
+	boost::uuids::random_generator generator;
+	std::string file1 = (fs::path(data.tmp_dir_uuid) / ("file1_" + boost::uuids::to_string(generator()))).string();
+	std::string file2 = (fs::path(data.tmp_dir_uuid) / ("file2_" + boost::uuids::to_string(generator()))).string();
+	fs::ofstream file1_writer;
+	fs::ofstream file2_writer;
+	std::string input, original_input, output1, output2;
+	if (data.diff_level == 2) {
+		file1_writer.open(file1);
+		file2_writer.open(file2);
+		file1_writer << "File1 Output File.\n";
+		file1_writer << "File path: " << data.file << "\n";
+		file2_writer << "File2 Output File.\n";
+		file2_writer << "File path: " << data.diff_file << "\n";
+	}
+	std::cout << "Exhaustive Testing: \n";
+	std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
+	unsigned long long iterations = 0;
+	while (true) {
+		iterations++;
+		output1 = output2 = input = "";
+		//Get input.
+		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+			return 1;
+		original_input = input;
+		// Deal with input.
+		if (!data.file_input.empty()) {
+			// Input should be saved to destination.
+			if (ret = ot::overwrite(data.file_input, input, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
+			input = "";
+		}
+		// Get actual output1.
+		if (ret = ot::execute(data.execute, input, output1, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+			break;
+		if (!data.file_output.empty()) {
+			// Output should be read from destination.
+			if (ret = ot::read(data.file_output, output1, data.file, data.tmp_dir_uuid, data.output_file, std::cout))
+				break;
+		}
+		output1 = ot::universal_eol(output1, data.universal_eol);
+		// Get actual output2.
+		if (ret = ot::execute(data.execute, input, output2, data.diff_file, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+			break;
+		if (!data.file_output.empty()) {
+			// Output should be read from destination.
+			if (ret = ot::read(data.file_output, output2, data.diff_file, data.tmp_dir_uuid, data.output_file, std::cout))
+				break;
+		}
+		output2 = ot::universal_eol(output2, data.universal_eol);
+		if (output1 != output2)
+			break;
+	}
+	std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
+	auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
+	std::cout << "Found disagreeing output after " << iterations << " iterations.\n";
+	std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
+	if (data.diff_level == 1) {
+		// Show on console.
+		std::cout << "Input:\n" << original_input << "\n";
+		std::cout << "File1 path: " << data.file << "\n";
+		std::cout << "File1 output:\n" << (data.eol.empty() ? output1 : ojtt::string::replaceAll(output1, "\n", data.eol + "\n")) << "\n";
+		std::cout << "File2 path: " << data.diff_file << "\n";
+		std::cout << "File2 output:\n" << (data.eol.empty() ? output2 : ojtt::string::replaceAll(output2, "\n", data.eol + "\n")) << "\n";
+	} else if (data.diff_level == 2) {
+		file1_writer << "Input:\n" << original_input << "\n";
+		file1_writer << "Output:\n" << (data.eol.empty() ? output1 : ojtt::string::replaceAll(output1, "\n", data.eol + "\n")) << "\n";
+		file2_writer << "Input:\n" << original_input << "\n";
+		file2_writer << "Output:\n" << (data.eol.empty() ? output2 : ojtt::string::replaceAll(output2, "\n", data.eol + "\n")) << "\n";
+	}
+	if (data.diff_level == 2) {
+		file1_writer.close();
+		file2_writer.close();
+		// Show in diff GUI.
+		std::string _2;
+		if (ret = ot::execute(data.diff, "", _2, file1, file2, "", data.time_out, _, std::cout)) return 1;
 	}
 	return 0;
 }
@@ -121,8 +205,8 @@ int main(int argc, char *argv[]) {
 		if (ret = data.setup_args(argc, argv, std::cout)) return exit(ret, data.pause);
 		// Compile.
 		if (ret = ot::compile(data.compile, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return exit(ret, data.pause);
-		std::cout << "\n";
 		if (data.test_single) {
+			std::cout << "\n";
 			int ac = 0;
 			if (test_single(ac, data))
 				return exit(ret, data.pause);
@@ -134,8 +218,11 @@ int main(int argc, char *argv[]) {
 		} else {
 			// Compile diff file.
 			if (ret = ot::compile(data.compile, data.diff_file, data.tmp_dir_uuid, data.output_file, std::cout)) return exit(ret, data.pause);
-			//TODO: use randomizer blah blah blah.
-			throw;
+			//Compile randomizer.
+			if (ret = ot::compile(data.randomizer_compile, data.input_randomizer, data.tmp_dir_uuid, data.output_file, std::cout)) return exit(ret, data.pause);
+			std::cout << "\n";
+			if (test_double(data))
+				return exit(ret, data.pause);
 		}
 		// End.
 		return exit(0, data.pause);

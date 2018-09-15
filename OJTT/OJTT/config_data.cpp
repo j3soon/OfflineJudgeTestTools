@@ -174,8 +174,13 @@ namespace ojtt {
 		if (vm.count("diff-file")) {
 			data.test_single = false;
 			//For Usage 2.
-			//TODO: no weakly canonoical.
-			data.diff_file = fs::weakly_canonical(vm["diff_file"].as<std::string>()).string();
+			try {
+				data.diff_file = fs::canonical(vm["diff-file"].as<std::string>()).string();
+			} catch (fs::filesystem_error& e) {
+				cout << "Error in function 'setup_args' at arg 'diff-file' when trying to get: " << vm["diff-file"].as<std::string>() << "\n";
+				cout << e.what() << "\n";
+				return 1;
+			}
 			if (vm.count("input-randomizer")) {
 				data.input_randomizer = vm["input-randomizer"].as<std::string>();
 			} else {
