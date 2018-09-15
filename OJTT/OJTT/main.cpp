@@ -103,9 +103,9 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		}
 		std::cout << " (" << exec_time << "ms)\n";
 	}
-	if (data.diff_level == 2) {
-		expected_writer.close();
-		actual_writer.close();
+	expected_writer.close();
+	actual_writer.close();
+	if (data.diff_level == 2 && ac != data.input_output.size()) {
 		// Show in diff GUI.
 		std::string _;
 		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, "", data.time_out, exec_time, std::cout)) return 1;
@@ -186,9 +186,9 @@ int test_double(const ojtt::config_data& data) {
 		file2_writer << "Input:\n" << original_input << "\n";
 		file2_writer << "Output:\n" << (data.eol.empty() ? output2 : ojtt::string::replaceAll(output2, "\n", data.eol + "\n")) << "\n";
 	}
+	file1_writer.close();
+	file2_writer.close();
 	if (data.diff_level == 2) {
-		file1_writer.close();
-		file2_writer.close();
 		// Show in diff GUI.
 		std::string _2;
 		if (ret = ot::execute(data.diff, "", _2, file1, file2, "", data.time_out, _, std::cout)) return 1;
