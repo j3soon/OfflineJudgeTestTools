@@ -142,6 +142,11 @@ int test_double(const ojtt::config_data& data) {
 		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
 			return 1;
 		original_input = input;
+		if (!data.file_random.empty()) {
+			// Random output should be read from destination.
+			if (ret = ot::read(data.file_random, original_input, data.file, data.tmp_dir_uuid, data.output_file, std::cout))
+				return 1;
+		}
 		// Deal with input.
 		if (!data.file_input.empty()) {
 			// Input should be saved to destination.
@@ -168,6 +173,8 @@ int test_double(const ojtt::config_data& data) {
 		output2 = ot::universal_eol(output2, data.universal_eol);
 		if (output1 != output2)
 			break;
+		if (iterations % data.time_log == 0)
+			std::cout << "Iterated " << iterations << " times.\n";
 	}
 	std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
 	auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);

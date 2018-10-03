@@ -52,9 +52,11 @@ namespace ojtt {
 			("compile,C", po::value<std::string>(), "command to compile the source file")
 			("execute,E", po::value<std::string>(), "command to execute the output file")
 			("output-file,O", po::value<std::string>(), "output file")
+			("file-random,R", po::value<std::string>(), "input random file path that was produced by the randomizer. (use this to avoid buffer overflow)")
 			("randomizer-compile,C", po::value<std::string>(), "command to compile the randomizer file (if not set uses 'compile' instead)")
 			("diff,D", po::value<std::string>(), "diff UI's command")
 			("time-out,tle,T", po::value<int>()->default_value(15000), "executable max running time in milliseconds")
+			("time-log,tlog", po::value<int>()->default_value(1000), "how many times for randomizer to match before print.")
 			("diff-level,L", po::value<int>()->default_value(1), "0 for don't show difference\n1 for show all directly\n2 for show by 'diff' command")
 			("pause,P", po::value<bool>()->default_value(false), "pause when exit")
 			;
@@ -161,6 +163,9 @@ namespace ojtt {
 		if (vm.count("time-out")) {
 			data.time_out = vm["time-out"].as<int>();
 		}
+		if (vm.count("time-log")) {
+			data.time_log = vm["time-log"].as<int>();
+		}
 		if (vm.count("diff-level")) {
 			data.diff_level = vm["diff-level"].as<int>();
 			if (data.diff_level < 0 || data.diff_level > 2) {
@@ -262,13 +267,22 @@ namespace ojtt {
 				std::string start_dir = testing::_preprocess_path(data.file, data.output_file, data.tmp_dir_uuid, data.output_file);
 				path = fs::path(start_dir).parent_path() / data.file_output;
 				file_output = path.string();
+			}
 		}
-	}
+		if (vm.count("file-random")) {
+			data.file_random = vm["file-random"].as<std::string>();
+			fs::path path(data.file_random);
+			if (path.is_relative()) {
+				std::string start_dir = testing::_preprocess_path(data.file, data.output_file, data.tmp_dir_uuid, data.output_file);
+				path = fs::path(start_dir).parent_path() / data.file_random;
+				file_random = path.string();
+			}
+		}
 
 		po::notify(vm);
 #ifdef DEBUG_MODE
 		cout << data.str();
 #endif
 		return 0;
-}
+	}
 }

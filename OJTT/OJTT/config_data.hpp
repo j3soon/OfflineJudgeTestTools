@@ -7,7 +7,7 @@ namespace ojtt {
 		std::string compile, execute;
 		std::string file;
 		std::set<std::pair<std::string, std::string>> input_output;
-		std::string file_input, file_output;
+		std::string file_input, file_output, file_random;
 		std::string output_file;
 		std::string diff_file;
 		std::string input_randomizer;
@@ -17,7 +17,7 @@ namespace ojtt {
 		bool universal_eol;
 		std::string randomizer_compile;
 		std::string diff;
-		int time_out;
+		int time_out, time_log;
 		int diff_level;
 		bool pause = false;
 		bool test_single;

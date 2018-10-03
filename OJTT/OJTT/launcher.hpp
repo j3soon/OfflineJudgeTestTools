@@ -28,11 +28,12 @@ namespace ojtt {
 		}
 	};
 	struct launcher {
-		static inline launcher_result launch(const std::string& exec, std::string start_dir = "", int time_out = -1, std::string input = "", int buff_size = 4096) {
+		static inline launcher_result launch(const std::string& exec, std::string start_dir = "", int time_out = -1, std::string input = "", size_t buff_size = 65535) {
 			launcher_result ret;
 			namespace bp = boost::process;
 			namespace fs = boost::filesystem;
 			boost::asio::io_service ios;
+			// TODO: make buff_size won't be full.
 			std::vector<char> buf(buff_size);
 			std::vector<char> inputbuff = std::vector<char>(input.begin(), input.end());
 			try {
@@ -46,6 +47,7 @@ namespace ojtt {
 					ret.setResult(launcher_result::RESULT_TIMEOUT);
 				}*/
 				bp::child c;
+				// buff_size might be full and exit very soon.
 				if (start_dir.empty()) {
 					c = bp::child(exec, bp::std_in < boost::asio::buffer(inputbuff),
 						(bp::std_out & bp::std_err) > boost::asio::buffer(buf), ios);
