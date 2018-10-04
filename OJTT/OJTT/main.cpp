@@ -135,17 +135,25 @@ int test_double(const ojtt::config_data& data) {
 	std::cout << "Exhaustive Testing: \n";
 	std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
 	unsigned long long iterations = 0;
+	bool input_empty, output_empty;
+	input_empty = output_empty = false;
 	while (true) {
 		iterations++;
 		output1 = output2 = input = "";
 		//Get input.
 		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
 			return 1;
-		original_input = input;
 		if (!data.file_random.empty()) {
 			// Random output should be read from destination.
-			if (ret = ot::read(data.file_random, original_input, data.file, data.tmp_dir_uuid, data.output_file, std::cout))
+			if (ret = ot::read(data.file_random, input, data.file, data.tmp_dir_uuid, data.output_file, std::cout))
 				return 1;
+		}
+		original_input = input;
+		if (!input_empty && input.empty()) {
+			std::cout << "Warning: Randomizer input is empty.\n";
+			std::cout << "Press enter to ignore . . .";
+			std::cin.get();
+			input_empty = true;
 		}
 		// Deal with input.
 		if (!data.file_input.empty()) {
@@ -173,13 +181,23 @@ int test_double(const ojtt::config_data& data) {
 		output2 = ot::universal_eol(output2, data.universal_eol);
 		if (output1 != output2)
 			break;
-		if (iterations % data.time_log == 0)
+		if (!output_empty && output1.empty()) {
+			std::cout << "Warning: Both files' output is empty.\n";
+			std::cout << "Press enter to ignore . . .";
+			std::cin.get();
+			output_empty = true;
+		}
+		if (iterations % data.time_log == 0) {
+			std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
+			auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
 			std::cout << "Iterated " << iterations << " times.\n";
+			std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
+		}
 	}
 	std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
 	auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
 	std::cout << "Found disagreeing output after " << iterations << " iterations.\n";
-	std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
+	std::cout << "Time total elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
 	if (data.diff_level == 1) {
 		// Show on console.
 		std::cout << "Input:\n" << original_input << "\n";
