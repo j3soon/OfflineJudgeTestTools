@@ -1,14 +1,11 @@
+#include "ojtt.hpp"
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/regex.hpp>
-#include <string>
-#include <utility>
 #include <vector>
-#include <set>
-#include "ojtt.hpp"
 #include "config_data.hpp"
 #include "testing.hpp"
 

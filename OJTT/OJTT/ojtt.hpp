@@ -1,5 +1,7 @@
 #ifndef OJTT_H
 #define OJTT_H
+#include <boost/filesystem/path.hpp>
+#include <boost/process.hpp>
 
 namespace ojtt {
 	namespace filesystem {
@@ -10,6 +12,11 @@ namespace ojtt {
 	}
 	namespace regex {
 		std::string escape(const std::string& str);
+	}
+	namespace process {
+		size_t getPeakWorkingSetSize(const boost::process::child& child);
+		// In 100 ns.
+		uint64_t getProcessExecutionTime(const boost::process::child& child);
 	}
 }
 #endif

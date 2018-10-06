@@ -60,7 +60,7 @@ namespace ojtt {
 				return 1;
 			return 0;
 		}
-		inline int execute(const std::string& command, const std::string& input, std::string& output, const std::string& file, const std::string& tempdir, std::string output_file, int time_out, long long& exec_time, std::ostream& cout, boost::filesystem::ofstream* pActual_writer = nullptr) {
+		inline int execute(const std::string& command, const std::string& input, std::string& output, const std::string& file, const std::string& tempdir, const std::string& output_file, int time_out, long long& exec_time, uint64_t& proc_time, size_t& proc_memory, std::ostream& cout, boost::filesystem::ofstream* pActual_writer = nullptr) {
 			namespace bp = boost::process;
 			// Preprocess command.
 			std::string cmd = _preprocess_path(file, command, tempdir, output_file);
@@ -76,6 +76,8 @@ namespace ojtt {
 			launcher_result lresult;
 			lresult = launcher::launch(cmd, start_dir, time_out, input);
 			exec_time = lresult.exec_time;
+			proc_time = lresult.processExecutionTime;
+			proc_memory = lresult.peakWorkingSetSize;
 			if (lresult.result == launcher_result::RESULT_EXCEPTION) {
 				cout << "Error in function 'execute' when executing command: " << cmd << "\n";
 				cout << "with starting directory: " << start_dir << "\n";

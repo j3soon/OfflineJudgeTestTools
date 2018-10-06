@@ -21,6 +21,9 @@ namespace ojtt {
 		long long exec_time;
 		std::string output;
 
+		size_t peakWorkingSetSize;
+		uint64_t processExecutionTime;
+
 		//TODO: Use more straightforward approach.
 		void setResult(Result result) {
 			if (this->result == RESULT_UNSET)
@@ -47,6 +50,7 @@ namespace ojtt {
 					ret.setResult(launcher_result::RESULT_TIMEOUT);
 				}*/
 				bp::child c;
+				std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
 				// buff_size might be full and exit very soon.
 				if (start_dir.empty()) {
 					c = bp::child(exec, bp::std_in < boost::asio::buffer(inputbuff),
@@ -56,7 +60,6 @@ namespace ojtt {
 						(bp::std_out & bp::std_err) > boost::asio::buffer(buf), ios,
 						bp::start_dir = start_dir);
 				}
-				std::chrono::time_point<std::chrono::system_clock> start_clk = std::chrono::system_clock::now();
 				if (time_out == -1) {
 					ios.run();
 				} else {
@@ -66,17 +69,15 @@ namespace ojtt {
 						ret.setResult(launcher_result::RESULT_TIMEOUT);
 					}
 				}
+				//Wait for the exit code.
+				c.wait();
 				std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
 				auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
 				auto ms = milliseconds.count();
 				ret.exec_time = ms;
-				/*if (time_out != -1 && !c.wait_for(std::chrono::milliseconds(0))) {
-					c.terminate();
-					ret.setResult(launcher_result::RESULT_TIMEOUT);
-				}*/
-				//Wait for the exit code.
-				c.wait();
 				ret.exit_code = c.exit_code();
+				ret.processExecutionTime = ojtt::process::getProcessExecutionTime(c);
+				ret.peakWorkingSetSize = ojtt::process::getPeakWorkingSetSize(c);
 			} catch (std::system_error& e) {
 				ret.setResult(launcher_result::RESULT_EXCEPTION);
 				ret.ex_what = e.what();

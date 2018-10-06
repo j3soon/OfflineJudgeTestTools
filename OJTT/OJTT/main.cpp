@@ -24,7 +24,8 @@ int test_single(int& ac, const ojtt::config_data& data) {
 	namespace ot = ojtt::testing;
 	namespace fs = boost::filesystem;
 	int ret;
-	size_t i = 0;
+	size_t i = 0, proc_memory;
+	uint64_t proc_time;
 	long long exec_time;
 	boost::uuids::random_generator generator;
 	std::string expected_file = (fs::path(data.tmp_dir_uuid) / ("expected_file_" + boost::uuids::to_string(generator()))).string();
@@ -65,11 +66,11 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		}
 		// Get actual output.
 		if (data.diff_level == 2) {
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout, &actual_writer)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout, &actual_writer)) {
 				continue;
 			}
 		} else {
-			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, std::cout)) {
+			if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout)) {
 				continue;
 			}
 		}
@@ -101,14 +102,14 @@ int test_single(int& ac, const ojtt::config_data& data) {
 			}
 			std::cout << "Result: Failed";
 		}
-		std::cout << " (" << exec_time << "ms)\n";
+		std::cout << " in " << exec_time << " ms (" << proc_time << "00 ns, " << proc_memory << " bytes)\n";
 	}
 	expected_writer.close();
 	actual_writer.close();
 	if (data.diff_level == 2 && ac != data.input_output.size()) {
 		// Show in diff GUI.
 		std::string _;
-		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, "", data.time_out, exec_time, std::cout)) return 1;
+		if (ret = ot::execute(data.diff, "", _, expected_file, actual_file, "", data.time_out, exec_time, proc_time, proc_memory, std::cout)) return 1;
 	}
 	return 0;
 }
@@ -117,7 +118,12 @@ int test_double(const ojtt::config_data& data) {
 	namespace ot = ojtt::testing;
 	namespace fs = boost::filesystem;
 	int ret;
-	long long _;
+
+	size_t proc_memory;
+	long long exec_time;
+	uint64_t proc_time;
+	uint64_t proc_acc_time1, proc_acc_memory1, proc_acc_time2, proc_acc_memory2;
+	proc_acc_time1 = proc_acc_memory1 = proc_acc_time2 = proc_acc_memory2 = 0;
 	boost::uuids::random_generator generator;
 	std::string file1 = (fs::path(data.tmp_dir_uuid) / ("file1_" + boost::uuids::to_string(generator()))).string();
 	std::string file2 = (fs::path(data.tmp_dir_uuid) / ("file2_" + boost::uuids::to_string(generator()))).string();
@@ -141,7 +147,7 @@ int test_double(const ojtt::config_data& data) {
 		iterations++;
 		output1 = output2 = input = "";
 		//Get input.
-		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time ,proc_memory, std::cout))
 			return 1;
 		if (!data.file_random.empty()) {
 			// Random output should be read from destination.
@@ -162,8 +168,10 @@ int test_double(const ojtt::config_data& data) {
 			input = "";
 		}
 		// Get actual output1.
-		if (ret = ot::execute(data.execute, input, output1, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+		if (ret = ot::execute(data.execute, input, output1, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout))
 			break;
+		proc_acc_time1 += proc_time;
+		proc_acc_memory1 += proc_memory;
 		if (!data.file_output.empty()) {
 			// Output should be read from destination.
 			if (ret = ot::read(data.file_output, output1, data.file, data.tmp_dir_uuid, data.output_file, std::cout))
@@ -171,8 +179,10 @@ int test_double(const ojtt::config_data& data) {
 		}
 		output1 = ot::universal_eol(output1, data.universal_eol);
 		// Get actual output2.
-		if (ret = ot::execute(data.execute, input, output2, data.diff_file, data.tmp_dir_uuid, data.output_file, data.time_out, _, std::cout))
+		if (ret = ot::execute(data.execute, input, output2, data.diff_file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout))
 			break;
+		proc_acc_time2 += proc_time;
+		proc_acc_memory2 += proc_memory;
 		if (!data.file_output.empty()) {
 			// Output should be read from destination.
 			if (ret = ot::read(data.file_output, output2, data.diff_file, data.tmp_dir_uuid, data.output_file, std::cout))
@@ -192,6 +202,11 @@ int test_double(const ojtt::config_data& data) {
 			auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_clk - start_clk);
 			std::cout << "Iterated " << iterations << " times.\n";
 			std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
+			std::cout << "File1 path: " << data.file << "\n";
+			std::cout << "File1 resources usage: "  << proc_acc_time1 << "00 ns, " << proc_acc_memory1 << " bytes (" << proc_acc_time1 / iterations / 10000 << "ms/iteration, " << proc_acc_memory1 / iterations / 1000 << "kB/iteration)\n";
+			std::cout << "File2 path: " << data.diff_file << "\n";
+			std::cout << "File2 resources usage: "  << proc_acc_time2 << "00 ns, " << proc_acc_memory2 << " bytes (" << proc_acc_time2 / iterations / 10000 << "ms/iteration, " << proc_acc_memory2 / iterations / 1000 << "kB/iteration)\n";
+			proc_acc_time1 = proc_acc_memory1 = proc_acc_time2 = proc_acc_memory2 = 0;
 		}
 	}
 	std::chrono::time_point<std::chrono::system_clock> end_clk = std::chrono::system_clock::now();
@@ -216,7 +231,7 @@ int test_double(const ojtt::config_data& data) {
 	if (data.diff_level == 2) {
 		// Show in diff GUI.
 		std::string _2;
-		if (ret = ot::execute(data.diff, "", _2, file1, file2, "", data.time_out, _, std::cout)) return 1;
+		if (ret = ot::execute(data.diff, "", _2, file1, file2, "", data.time_out, exec_time, proc_time, proc_memory, std::cout)) return 1;
 	}
 	return 0;
 }

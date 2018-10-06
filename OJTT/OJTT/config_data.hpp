@@ -1,5 +1,8 @@
 #ifndef OJTT_CONFIG_DATA_H
 #define OJTT_CONFIG_DATA_H
+#include <string>
+#include <utility>
+#include <set>
 
 namespace ojtt {
 	//TODO: Encapsulate.
