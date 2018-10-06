@@ -53,7 +53,7 @@ namespace ojtt {
 			("randomizer-compile,C", po::value<std::string>(), "command to compile the randomizer file (if not set uses 'compile' instead)")
 			("diff,D", po::value<std::string>(), "diff UI's command")
 			("time-out,tle,T", po::value<int>()->default_value(15000), "executable max running time in milliseconds")
-			("time-log,tlog", po::value<int>()->default_value(1000), "how many times for randomizer to match before print.")
+			("time-log,tlog", po::value<int>()->default_value(100), "how many times for randomizer to match before print.")
 			("diff-level,L", po::value<int>()->default_value(1), "0 for don't show difference\n1 for show all directly\n2 for show by 'diff' command")
 			("pause,P", po::value<bool>()->default_value(false), "pause when exit")
 			;

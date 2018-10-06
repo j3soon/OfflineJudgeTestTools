@@ -203,9 +203,9 @@ int test_double(const ojtt::config_data& data) {
 			std::cout << "Iterated " << iterations << " times.\n";
 			std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
 			std::cout << "File1 path: " << data.file << "\n";
-			std::cout << "File1 resources usage: "  << proc_acc_time1 << "00 ns, " << proc_acc_memory1 << " bytes (" << proc_acc_time1 / iterations / 10000 << "ms/iteration, " << proc_acc_memory1 / iterations / 1000 << "kB/iteration)\n";
+			std::cout << "File1 resources usage: "  << proc_acc_time1 << "00 ns, " << proc_acc_memory1 << " bytes (" << proc_acc_time1 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory1 / data.time_log / 1024 << "kB/single-run)\n";
 			std::cout << "File2 path: " << data.diff_file << "\n";
-			std::cout << "File2 resources usage: "  << proc_acc_time2 << "00 ns, " << proc_acc_memory2 << " bytes (" << proc_acc_time2 / iterations / 10000 << "ms/iteration, " << proc_acc_memory2 / iterations / 1000 << "kB/iteration)\n";
+			std::cout << "File2 resources usage: "  << proc_acc_time2 << "00 ns, " << proc_acc_memory2 << " bytes (" << proc_acc_time2 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory2 / data.time_log / 1024 << "kB/single-run)\n";
 			proc_acc_time1 = proc_acc_memory1 = proc_acc_time2 = proc_acc_memory2 = 0;
 		}
 	}

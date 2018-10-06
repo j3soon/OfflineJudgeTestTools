@@ -121,6 +121,10 @@ namespace ojtt {
 			try {
 				// Read entire file.
 				fs::ifstream reader(p);
+				if (!reader) {
+					cout << "Error in function 'read' when reading from file: " << p << "\n";
+					return 1;
+				}
 				//TODO: Change to 'Rvalue References' instead? e.g. std::string&& str...
 				// parenthesis below is required to prevent The Most Vexing Parse problem.
 				std::string str((std::istreambuf_iterator<char>(reader)),
@@ -141,7 +145,12 @@ namespace ojtt {
 			std::string p = _preprocess_path(file, path, tempdir, output_file);
 			// Write to file.
 			try {
+				fs::create_directories(fs::path(p).parent_path());
 				fs::ofstream writer(p);
+				if (!writer) {
+					cout << "Error in function 'read' when reading from file: " << p << "\n";
+					return 1;
+				}
 				writer << input;
 				writer.close();
 			} catch (fs::filesystem_error& e) {
