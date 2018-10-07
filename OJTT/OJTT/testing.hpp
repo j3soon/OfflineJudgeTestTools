@@ -145,7 +145,9 @@ namespace ojtt {
 			std::string p = _preprocess_path(file, path, tempdir, output_file);
 			// Write to file.
 			try {
-				fs::create_directories(fs::path(p).parent_path());
+				//TODO: remove this hack by something normal.
+				if (!fs::path(p).parent_path().empty())
+					fs::create_directories(fs::path(p).parent_path());
 				fs::ofstream writer(p);
 				if (!writer) {
 					cout << "Error in function 'read' when reading from file: " << p << "\n";
