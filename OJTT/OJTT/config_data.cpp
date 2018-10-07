@@ -6,6 +6,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/regex.hpp>
 #include <vector>
+#include <map>
 #include "config_data.hpp"
 #include "testing.hpp"
 
@@ -26,8 +27,9 @@ namespace ojtt {
 
 		// Descriptions.
 		po::options_description desc(std::string("Usage: \n") +
-			"1. ojtt [options] [file] [input1] [output1] [input2] [output2]...\n" +
-			"2. ojtt [options] [file] -d [diff-file] -r [input-randomizer]");
+			"1. ojtt [options] [file] ([input1] [output1] [input2] [output2]...)\n" +
+			"2. ojtt [options] [file] -d [diff-file] -r [input-randomizer]\n" +
+		    "3. ojtt [options] [file] -c ([input1] [output1] [input2] [output2]...)");
 		po::options_description generic("Generic options");
 		po::options_description config("Configuration");
 		generic.add_options()
@@ -41,6 +43,8 @@ namespace ojtt {
 			("input-output,t", po::value<std::vector<std::string>>()->composing(), "key-value pairs of input test files and the matching expected output files")
 			("diff-file,d", po::value<std::string>(), "the 2nd file to test (diff)")
 			("input-randomizer,r", po::value<std::string>(), "file to generate random inputs")
+			("create,c", po::bool_switch()->default_value(false), "create output file for corresponding inputs if not exist")
+			("test-folder,t", po::value<std::vector<std::string>>()->composing(), "folders that might contain test cases")
 			;
 		config.add_options()
 			("tmp-dir", po::value<std::string>()->default_value((fs::temp_directory_path() / "ojtt").string()), "directory for saving temp files")
@@ -50,7 +54,7 @@ namespace ojtt {
 			("execute,E", po::value<std::string>(), "command to execute the output file")
 			("output-file,O", po::value<std::string>(), "output file")
 			("file-random,R", po::value<std::string>(), "input random file path that was produced by the randomizer. (use this to avoid buffer overflow)")
-			("randomizer-compile,C", po::value<std::string>(), "command to compile the randomizer file (if not set uses 'compile' instead)")
+			("randomizer-compile", po::value<std::string>(), "command to compile the randomizer file (if not set uses 'compile' instead)")
 			("diff,D", po::value<std::string>(), "diff UI's command")
 			("time-out,tle,T", po::value<int>()->default_value(15000), "executable max running time in milliseconds")
 			("time-log,tlog", po::value<int>()->default_value(100), "how many times for randomizer to match before print.")
@@ -173,6 +177,9 @@ namespace ojtt {
 		if (vm.count("pause")) {
 			data.pause = vm["pause"].as<bool>();
 		}
+		if (vm.count("create")) {
+			data.create = vm["create"].as<bool>();
+		}
 		if (vm.count("diff-file")) {
 			data.test_single = false;
 			//For Usage 2.
@@ -190,6 +197,9 @@ namespace ojtt {
 				return 1;
 			}
 		} else if (vm.count("input-output")) {
+			if (vm.count("test-folder"))
+				data.test_folder = vm["test-folder"].as<std::vector<std::string>>();
+			data.test_folder.push_back("");
 			data.test_single = true;
 			// For Usage 1.
 			std::vector<std::string> io = vm["input-output"].as<std::vector<std::string>>();
@@ -203,8 +213,8 @@ namespace ojtt {
 				i++;
 				if (i == 2) {
 					// Got a pair.
-					std::set<std::string> input_set;
-					std::set<std::string> output_set;
+					std::map<std::string, std::string> input_map;
+					std::map<std::string, std::string> output_map;
 					i = 0;
 					s2 = it;
 					// Use RegEx to deal with '<any>'.
@@ -215,15 +225,18 @@ namespace ojtt {
 					boost::smatch what;
 
 					try {
-						for (auto f : fs::directory_iterator(
-							fs::path(data.file).parent_path().string())) {
-							// The 'file_name' below must be used indirectly or it'll have strange results.
-							std::string file_name = f.path().filename().string();
-							if (boost::regex_match(file_name, what, reg1)) {
-								input_set.insert(what[1]);
-							}
-							if (boost::regex_match(file_name, what, reg2)) {
-								output_set.insert(what[1]);
+						for (auto str : data.test_folder) {
+							for (auto f : fs::directory_iterator(
+								(fs::path(data.file).parent_path() / str).string())) {
+								// The 'file_name' below must be used indirectly or it'll have strange results.
+								std::string file_name = f.path().filename().string();
+								// TODO: (x) Deal with 'in.in' <any>.in in.<any>.
+								if (boost::regex_match(file_name, what, reg1)) {
+									input_map[what[1]] = str;
+								}
+								if (boost::regex_match(file_name, what, reg2)) {
+									output_map[what[1]] = str;
+								}
 							}
 						}
 					} catch (fs::filesystem_error& e) {
@@ -234,11 +247,18 @@ namespace ojtt {
 
 					// Push matching set to vector.
 
-					for (auto it : input_set) {
-						if (output_set.find(it) != output_set.end()) {
-							//TODO: Remove duplicates.
+					for (auto it : input_map) {
+						if (output_map.find(it.first) != output_map.end()) {
+							// TODO: Remove duplicated pair.
 							// Found pair.
-							data.input_output.insert(std::make_pair(os::replaceAll(s1, "<any>", it), os::replaceAll(s2, "<any>", it)));
+							data.input_output.insert(std::make_pair(
+								(fs::path(it.second) / os::replaceAll(s1, "<any>", it.first)).string(),
+								(fs::path(it.second) / os::replaceAll(s2, "<any>", it.first)).string()));
+						} else {
+							// Only input file found.
+							data.input_only.insert(std::make_pair(
+								(fs::path(it.second) / os::replaceAll(s1, "<any>", it.first)).string(),
+								(fs::path(it.second) / os::replaceAll(s2, "<any>", it.first)).string()));
 						}
 					}
 				}

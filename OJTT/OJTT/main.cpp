@@ -18,7 +18,47 @@ int exit(int exit_code, bool pause) {
 	return exit_code;
 }
 
-//TODO: Reuse the same code of the 2 functions below.
+//TODO: Reuse the same code of the 3 functions below.
+
+int create_single(const ojtt::config_data& data) {
+	namespace ot = ojtt::testing;
+	namespace fs = boost::filesystem;
+	int ret;
+	size_t i = 0, proc_memory;
+	uint64_t proc_time;
+	long long exec_time;
+	// Test all test cases.
+	for (auto io : data.input_only) {
+		i++;
+		std::string progress = i + "/" + data.input_only.size();
+		std::cout << "Calculating: " << io.first << "\n";
+		std::string input, original_input, actual_output;
+		// Read input, output from file.
+		if (ret = ot::read(io.first, input, data.file, data.tmp_dir, data.output_file, std::cout)) return 1;
+		input = ot::universal_eol(input, data.universal_eol);
+		original_input = input;
+		// Deal with input.
+		if (!data.file_input.empty()) {
+			// Input should be saved to destination.
+			if (ret = ot::overwrite(data.file_input, input, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
+			input = "";
+		}
+		// Get actual output.
+		if (ret = ot::execute(data.execute, input, actual_output, data.file, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout)) {
+			continue;
+		}
+		if (!data.file_output.empty()) {
+			// Output should be read from destination.
+			if (ret = ot::read(data.file_output, actual_output, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
+		}
+		//TODO: Should universal_eol be after write to file?
+		// Line below can prevent doubled new-line problem.
+		actual_output = ot::universal_eol(actual_output, data.universal_eol);
+		if (ret = ot::overwrite(io.second, actual_output, data.file, data.tmp_dir_uuid, data.output_file, std::cout)) return 1;
+		std::cout << "Result: Created";
+		std::cout << " in " << exec_time << " ms (" << proc_time << "00 ns, " << proc_memory << " bytes)\n";
+	}
+}
 
 int test_single(int& ac, const ojtt::config_data& data) {
 	namespace ot = ojtt::testing;
@@ -37,6 +77,12 @@ int test_single(int& ac, const ojtt::config_data& data) {
 		actual_writer.open(actual_file);
 		expected_writer << "Expected Output File.\n";
 		actual_writer << "Actual Output File.\n";
+	}
+
+	if (data.input_only.size()) {
+		std::cout << "There are input only test cases.\n";
+		if (data.create)
+			create_single(data);
 	}
 
 	// Test all test cases.
@@ -147,7 +193,7 @@ int test_double(const ojtt::config_data& data) {
 		iterations++;
 		output1 = output2 = input = "";
 		//Get input.
-		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time ,proc_memory, std::cout))
+		if (ret = ot::execute(data.execute, "", input, data.input_randomizer, data.tmp_dir_uuid, data.output_file, data.time_out, exec_time, proc_time, proc_memory, std::cout))
 			return 1;
 		if (!data.file_random.empty()) {
 			// Random output should be read from destination.
@@ -203,9 +249,9 @@ int test_double(const ojtt::config_data& data) {
 			std::cout << "Iterated " << iterations << " times.\n";
 			std::cout << "Time elapsed: " << milliseconds.count() << "ms (" << (milliseconds.count() / iterations) << " ms/iteration)\n";
 			std::cout << "File1 path: " << data.file << "\n";
-			std::cout << "File1 resources usage: "  << proc_acc_time1 << "00 ns, " << proc_acc_memory1 << " bytes (" << proc_acc_time1 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory1 / data.time_log / 1024 << "kB/single-run)\n";
+			std::cout << "File1 resources usage: " << proc_acc_time1 << "00 ns, " << proc_acc_memory1 << " bytes (" << proc_acc_time1 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory1 / data.time_log / 1024 << "kB/single-run)\n";
 			std::cout << "File2 path: " << data.diff_file << "\n";
-			std::cout << "File2 resources usage: "  << proc_acc_time2 << "00 ns, " << proc_acc_memory2 << " bytes (" << proc_acc_time2 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory2 / data.time_log / 1024 << "kB/single-run)\n";
+			std::cout << "File2 resources usage: " << proc_acc_time2 << "00 ns, " << proc_acc_memory2 << " bytes (" << proc_acc_time2 / data.time_log / 10000 << "ms/single-run, " << proc_acc_memory2 / data.time_log / 1024 << "kB/single-run)\n";
 			proc_acc_time1 = proc_acc_memory1 = proc_acc_time2 = proc_acc_memory2 = 0;
 		}
 	}

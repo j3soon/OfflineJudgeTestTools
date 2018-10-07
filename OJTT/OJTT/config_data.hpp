@@ -9,7 +9,9 @@ namespace ojtt {
 	struct config_data {
 		std::string compile, execute;
 		std::string file;
+		std::vector<std::string> test_folder;
 		std::set<std::pair<std::string, std::string>> input_output;
+		std::set<std::pair<std::string, std::string>> input_only;
 		std::string file_input, file_output, file_random;
 		std::string output_file;
 		std::string diff_file;
@@ -17,7 +19,7 @@ namespace ojtt {
 		std::string tmp_dir;
 		std::string tmp_dir_uuid;
 		std::string eol;
-		bool universal_eol;
+		bool universal_eol, create;
 		std::string randomizer_compile;
 		std::string diff;
 		int time_out, time_log;
